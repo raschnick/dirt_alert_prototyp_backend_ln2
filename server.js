@@ -1,11 +1,9 @@
-// Imports
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb'); // See https://www.mongodb.com/docs/drivers/node/current/quick-start/
 const cors = require('cors')
 const http = require('http');
 const bodyParser = require('body-parser');
 
-// Set up App
 const app = express();
 app.use(cors()); // Allow all cross-origing requests. More information: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 app.use(express.static('public')); // Host all static files in the folder /public
@@ -15,21 +13,29 @@ app.set('port', port);
 
 const server = http.createServer(app);
 
-// MongoDB connection URI
-
 const DB_USER = "da_admin";
-
 const DB_PW = "HelloDirtAlert123";
-
 const DB_NAME = 'dirtalert';
-
 const DB_STORY_COLLECTION = 'stories';
+const DB_AWARD_COLLECTION = 'awards';
 
 const URI = "mongodb+srv://" + DB_USER + ":"+ DB_PW + "@dirtalert.z0it4.mongodb.net/test";
 
-
 // Create the client
 const client = new MongoClient(URI);
+
+// Connect to the db
+let database;
+client.connect((error, db) => {
+    if (error || !db) {
+        console.log("Could not connect to MongoDB:")
+        console.log(error.message);
+    }
+    else {
+        database = db.db('dirtalert');
+        console.log("Successfully connected to MongoDB.");
+    }
+})
 
 //////////////////////////////////////
 //// ENDPOINTS ///////////////////////
@@ -39,67 +45,36 @@ app.get('/api', async (req, res) => {
     res.send("Welcome to the DirtAlert DB");
 })
 
-// GET /api/messages
-// Variant A: Without query params
+// Story Endpoints
+
+// GET /api/stories
 app.get('/api/stories', async (req, res) => {
+
     try {
-        await client.connect();
+        const collection = database.collection(DB_STORY_COLLECTION);
 
-        const database = client.db(DB_NAME);
-        const messages = database.collection(DB_STORY_COLLECTION);
-
-        // Get all messages
-        const result = await messages.find().toArray();
+        const result = await collection.find().toArray();
         res.send(result);
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
+
 })
 
-// GET /api/messages
-// Variant B: With query params
-app.get('/api/messages', async (req, res) => {
-    try {
-        await client.connect();
-        const database = client.db('messageboard');
-        const messages = database.collection('messages');
-
-        // You can specify a query/filter here, e.g., { sender: "Max"};
-        // See https://www.mongodb.com/docs/drivers/node/current/fundamentals/crud/query-document/
-        const query = {};
-        if (req.query.sender) {
-            query.sender = req.query.sender;
-        }
-
-        // Get all messages that match the query
-        const result = await messages.find(query).toArray();
-        res.send(result);
-    } catch (error) {
-        res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
-    }
-})
-
-
-// GET /api/messages/:id
-app.get('/api/messages/:id', async (req, res) => {
+// GET /api/stories/:id
+app.get('/api/stories/:id', async (req, res) => {
 
     // read the path parameter :id
     let id = req.params.id;
 
     try {
-        await client.connect();
-        const database = client.db('messageboard');
-        const messages = database.collection('messages');
+        const stories = database.collection(DB_STORY_COLLECTION);
         const query = { _id: ObjectId(id) }; // filter by id
-        const result = await messages.findOne(query);
+        const result = await stories.findOne(query);
 
         if (!result) {
             let responseBody = {
-                status: "No message with id " + id
+                status: "No story with id " + id
             }
             res.status(404).send(responseBody);
         }
@@ -108,18 +83,14 @@ app.get('/api/messages/:id', async (req, res) => {
         }
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
 
 })
 
-// POST /api/messages
+// POST /api/stories
 app.post('/api/stories', async (req, res) => {
 
     try {
-        await client.connect();
-        const database = client.db(DB_NAME);
         const stories = database.collection(DB_STORY_COLLECTION);
 
         var story = {
@@ -134,8 +105,35 @@ app.post('/api/stories', async (req, res) => {
         res.status(201).send({ _id: result.insertedId });
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
+    }
+})
+
+//--------------------------------------------------------------------------------------------------
+// Update a Story
+//--------------------------------------------------------------------------------------------------
+app.put('/api/stories/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+    let story = req.body;
+    delete story._id; // delete the _id from the object, because the _id cannot be updated
+
+    try {
+        const collection = database.collection(DB_STORY_COLLECTION);
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await collection.updateOne(query, { $set: story });
+
+        if (result.matchedCount === 0) {
+            let responseBody = {
+                status: "No object with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            res.send({ status: "Object with id " + id + " has been updated." });
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
     }
 })
 
@@ -144,8 +142,6 @@ app.delete('/api/messages/:id', async (req, res) => {
     let id = req.params.id;
 
     try {
-        await client.connect();
-        const database = client.db('messageboard');
         const messages = database.collection('messages');
         const query = { _id: ObjectId(id) }; // filter by id
         const result = await messages.deleteOne(query);
@@ -164,9 +160,23 @@ app.delete('/api/messages/:id', async (req, res) => {
         }
     } catch (error) {
         res.status(500).send({ error: error.message });
-    } finally {
-        await client.close();
     }
+})
+
+// Award Endpoints
+
+// GET /api/awards
+app.get('/api/awards', async (req, res) => {
+
+    try {
+        const collection = database.collection(DB_AWARD_COLLECTION);
+
+        const result = await collection.find().toArray();
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+
 })
 
 server.listen(port, () => console.log("app listening on port " + port));
