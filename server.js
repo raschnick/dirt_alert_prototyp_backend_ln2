@@ -125,12 +125,12 @@ app.put('/api/stories/:id', async (req, res) => {
 
         if (result.matchedCount === 0) {
             let responseBody = {
-                status: "No object with id " + id
+                status: "No story with id " + id
             }
             res.status(404).send(responseBody);
         }
         else {
-            res.send({ status: "Object with id " + id + " has been updated." });
+            res.send({ status: "Story with id " + id + " has been updated." });
         }
     } catch (error) {
         res.status(500).send({ error: error.message });
@@ -177,6 +177,61 @@ app.get('/api/awards', async (req, res) => {
         res.status(500).send({ error: error.message });
     }
 
+})
+
+// GET /api/awards/:id
+app.get('/api/awards/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+
+    try {
+        const awards = database.collection(DB_AWARD_COLLECTION);
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await awards.findOne(query);
+
+        if (!result) {
+            let responseBody = {
+                status: "No award with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            res.send(result);
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+
+})
+
+//--------------------------------------------------------------------------------------------------
+// Update an Award
+//--------------------------------------------------------------------------------------------------
+app.put('/api/awards/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+    let award = req.body;
+    delete award._id; // delete the _id from the object, because the _id cannot be updated
+
+    try {
+        const collection = database.collection(DB_AWARD_COLLECTION);
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await collection.updateOne(query, { $set: award });
+
+        if (result.matchedCount === 0) {
+            let responseBody = {
+                status: "No award with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            res.send({ status: "Award with id " + id + " has been updated." });
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
 })
 
 server.listen(port, () => console.log("app listening on port " + port));
