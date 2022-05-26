@@ -18,6 +18,7 @@ const DB_PW = "HelloDirtAlert123";
 const DB_NAME = 'dirtalert';
 const DB_STORY_COLLECTION = 'stories';
 const DB_AWARD_COLLECTION = 'awards';
+const DB_USER_COLLECTION = 'users';
 
 const URI = "mongodb+srv://" + DB_USER + ":"+ DB_PW + "@dirtalert.z0it4.mongodb.net/test";
 
@@ -45,9 +46,11 @@ app.get('/api', async (req, res) => {
     res.send("Welcome to the DirtAlert DB");
 })
 
+//--------------------------------------------------------------------------------------------------
 // Story Endpoints
+//--------------------------------------------------------------------------------------------------
 
-// GET /api/stories
+// GET - /api/stories - get all stories
 app.get('/api/stories', async (req, res) => {
 
     try {
@@ -61,7 +64,7 @@ app.get('/api/stories', async (req, res) => {
 
 })
 
-// GET /api/stories/:id
+// GET - /api/stories/:id - get a story by id
 app.get('/api/stories/:id', async (req, res) => {
 
     // read the path parameter :id
@@ -87,7 +90,7 @@ app.get('/api/stories/:id', async (req, res) => {
 
 })
 
-// POST /api/stories
+// POST - /api/stories - create a new story
 app.post('/api/stories', async (req, res) => {
 
     try {
@@ -108,9 +111,7 @@ app.post('/api/stories', async (req, res) => {
     }
 })
 
-//--------------------------------------------------------------------------------------------------
-// Update a Story
-//--------------------------------------------------------------------------------------------------
+// PUT - /api/stories/:id - update an existing story by id
 app.put('/api/stories/:id', async (req, res) => {
 
     // read the path parameter :id
@@ -137,24 +138,24 @@ app.put('/api/stories/:id', async (req, res) => {
     }
 })
 
-// DELETE /api/messages
-app.delete('/api/messages/:id', async (req, res) => {
+// DELETE - /api/stories/:id - delete a story by id
+app.delete('/api/stories/:id', async (req, res) => {
     let id = req.params.id;
 
     try {
-        const messages = database.collection('messages');
+        const story = database.collection(DB_STORY_COLLECTION);
         const query = { _id: ObjectId(id) }; // filter by id
-        const result = await messages.deleteOne(query);
+        const result = await story.deleteOne(query);
 
         if (result.deletedCount === 0) {
             let responseBody = {
-                status: "No message with id " + id
+                status: "No story with id " + id
             }
             res.status(404).send(responseBody);
         }
         else {
             let responseBody = {
-                status: "Message with id " + id + " has been successfully deleted."
+                status: "Story with id " + id + " has been successfully deleted."
             }
             res.send(responseBody);
         }
@@ -163,9 +164,11 @@ app.delete('/api/messages/:id', async (req, res) => {
     }
 })
 
+//--------------------------------------------------------------------------------------------------
 // Award Endpoints
+//--------------------------------------------------------------------------------------------------
 
-// GET /api/awards
+// GET - /api/awards - get all awards
 app.get('/api/awards', async (req, res) => {
 
     try {
@@ -179,10 +182,8 @@ app.get('/api/awards', async (req, res) => {
 
 })
 
-// GET /api/awards/:id
+// GET - /api/awards/:id - get an award by id
 app.get('/api/awards/:id', async (req, res) => {
-
-    // read the path parameter :id
     let id = req.params.id;
 
     try {
@@ -205,12 +206,8 @@ app.get('/api/awards/:id', async (req, res) => {
 
 })
 
-//--------------------------------------------------------------------------------------------------
-// Update an Award
-//--------------------------------------------------------------------------------------------------
+// PUT - /api/awards/:id - update an award by id
 app.put('/api/awards/:id', async (req, res) => {
-
-    // read the path parameter :id
     let id = req.params.id;
     let award = req.body;
     delete award._id; // delete the _id from the object, because the _id cannot be updated
@@ -232,6 +229,49 @@ app.put('/api/awards/:id', async (req, res) => {
     } catch (error) {
         res.status(500).send({ error: error.message });
     }
+})
+
+//--------------------------------------------------------------------------------------------------
+// User Endpoints
+//--------------------------------------------------------------------------------------------------
+
+// GET - /api/users - get all users
+app.get('/api/users', async (req, res) => {
+
+    try {
+        const collection = database.collection(DB_USER_COLLECTION);
+        const result = await collection.find().toArray();
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+
+})
+
+// GET - /api/users/:id - get a story by id
+app.get('/api/users/:id', async (req, res) => {
+
+    // read the path parameter :id
+    let id = req.params.id;
+
+    try {
+        const users = database.collection(DB_USER_COLLECTION);
+        const query = { _id: ObjectId(id) }; // filter by id
+        const result = await users.findOne(query);
+
+        if (!result) {
+            let responseBody = {
+                status: "No user with id " + id
+            }
+            res.status(404).send(responseBody);
+        }
+        else {
+            res.send(result);
+        }
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+
 })
 
 server.listen(port, () => console.log("app listening on port " + port));
