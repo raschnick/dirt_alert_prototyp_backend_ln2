@@ -98,6 +98,7 @@ app.post('/api/stories', async (req, res) => {
 
         var story = {
             title: req.body.title,
+            user: req.body.user,
             date: (new Date()).toISOString(),
             image: null,
             awards: [],
