@@ -43,7 +43,7 @@ client.connect((error, db) => {
 //////////////////////////////////////
 
 app.get('/api', async (req, res) => {
-    res.send("Welcome to the DirtAlert DB");
+    res.send("Welcome to the Dirt Alert DB");
 })
 
 //--------------------------------------------------------------------------------------------------
@@ -95,11 +95,15 @@ app.post('/api/stories', async (req, res) => {
 
     try {
         const stories = database.collection(DB_STORY_COLLECTION);
+        let date = new Date();
+        let day = date.getDate();
+        let month = date.getMonth() + 1; // + 1 since Months start at 0
+        let year = date.getFullYear();
 
         var story = {
             title: req.body.title,
             user: req.body.user,
-            date: (new Date()).toISOString(),
+            date: day + "." + month + "." + year,
             image: null,
             awards: [],
         };
