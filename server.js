@@ -253,7 +253,7 @@ app.get('/api/users', async (req, res) => {
 
 })
 
-// GET - /api/users/:id - get a story by id
+// GET - /api/users/:id - get a user by id
 app.get('/api/users/:id', async (req, res) => {
 
     // read the path parameter :id
